@@ -1,0 +1,8 @@
+# Creates the four coordinates
+A1 1
+B1 2
+C1 3
+D1 4
+
+# Should Return an IllegalStateException
+A2 =(PRODUCT 5 A1:D2)

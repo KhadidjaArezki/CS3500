@@ -1,0 +1,110 @@
+Beyond gOOD: A Simple Spreadsheet, Part 1
+
+Spreadsheets are actually a fairly sophisticated functional programming environment:
+  formulas can contain functions of a fixed number of arguments, or of a range of values;
+  they can contain conditionals to select among options;
+  by creating a bunch of similar, consecutive rows they can even simulate fixed-length iteration.
+  The only thing they prohibit is cyclic reference: no cell can depend upon its own value
+  as one of its inputs.
+  Moreover, if we edit any of the cells, every cell that depends upon it will automatically get
+  re-evaluated to incorporate the new input value.
+  (This is a small example of what is known as dataflow programming, and it’s a very powerful and
+  useful programming model.)
+  
+ In this project, we will build an application that lets us load, edit and save simple spreadsheets.
+ We may start from a blank file, or from some input (that may have been created by our application or
+ by some other, unrelated one).
+
+ 
+1. Description of spreadsheets
+  
+A (professional) spreadsheet contains one or more worksheets, each of which consists of a collection
+of cells. In this project, we will only need to support one worksheet per file, so “spreadsheet” and
+“worksheet” will be considered synonyms.
+Cell names are written as <column name><row index>, where column names follow the pattern:
+
+Columns 1 through 26 get names A through Z
+Columns 27 through 52 get names AA through AZ
+Columns 53 through 78 get names BA through BZ ...
+Column 703 gets name AAA ...
+Row indices are also numbered starting from 1...but fortunately, we just use numbers for that instead
+of letters. (In this naming scheme, there is no row or column with index 0.)
+
+
+2. Cell contents
+
+An individual spreadsheet cell may:
+
+  - be blank
+  - contain a value
+  - contain a formula
+  
+If a cell contains a value, then at minimum your spreadsheets must support:
+
+  - boolean values
+  - double values
+  - String values
+
+A formula is one of:
+
+  - a value
+  - a reference to a rectangular region of cells in the spreadsheet
+  - a function applied to one or more formulas as its arguments
+
+
+3. Evaluating cells
+
+Cells that contain values (as described above) just evaluate to themselves.
+As described above, a formula can take as inputs references to other cells (or groups of cells). 
+Evaluating a formula therefore may require evaluating other formulas as well.
+
+No formula is permitted to refer to itself, though, either directly or indirectly, since that would lead
+to an infinite regress. (One simple direct example would be “Let A1 equal A1 plus 1”.
+One simple indirect example would be “Let A1 equal B1, and let B1 equal A1 plus 1”.)
+Such an error can easily happen, so detecting and preventing it is important.
+Moreover, any formula that depends on one of these erroneous formulas must itself be in error.
+
+
+3.1 How is the spreadsheet seen?
+
+Spreadsheets intrinsically can be viewed in several ways:
+
+As a graphical grid of cells, showing their evaluated values
+As a graphical grid of cells, showing their raw contents (e.g. the text of the formulas or values in each cell)
+As a text file describing their contents
+...
+Below we show a text file describing a spreadsheet example along with one additional formula (just for 
+demonstration purposes). Each row consists of a cell name, a space, and then the contents of the cell 
+as the remainder of the line. (Lines beginning with a # are comments.)
+Cells A1 through D1 contain values; cells A2 through A4 contain formulas.
+
+# Creates the four coordinates
+A1 3
+B1 4
+C1 9
+D1 12
+
+# Computes delta-x^2
+A2 =(PRODUCT (SUB C1 A1) (SUB C1 A1))
+# Computes delta-y^2
+B2 =(PRODUCT (SUB D1 B1) (SUB D1 B1))
+# Computes the rest of the distance formula
+A3 =(SQRT (SUM A2:B2))
+B3 =(< A3 10)
+
+# Computes the distance formula all in one step
+A4 =(SQRT (SUM (PRODUCT (SUB C1 A1) (SUB C1 A1)) (PRODUCT (SUB D1 B1) (SUB D1 B1))))
+
+Formulas are written with a leading =, and are followed by an s-expression describing the formula.
+To review, an s-expression is one of:
+
+  - A number (written like a Java double)
+  - A string (written like a Java String, with quotes as usual)
+  - A boolean (written as either true or false)
+  - A symbol (written as any sequence of letters, digits or symbols, with no spaces)
+  - A list of s-expressions, surrounded by parentheses and separated by spaces
+
+Any function names or cell references that appear in a formula will be parsed as symbols in the s-expression.
+A cell reference can be either a single cell name (e.g. A5), or two cell names separated by a colon 
+(i.e. C42:D53) where the second cell’s column and row are no smaller than the first cell’s column and row.
+
