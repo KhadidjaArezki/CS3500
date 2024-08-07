@@ -16,7 +16,7 @@ import edu.cs3500.spreadsheets.model.Worksheet;
 import edu.cs3500.spreadsheets.model.WorksheetBuilderImp;
 import edu.cs3500.spreadsheets.view.*;
 
-public class BeyondGood {
+public class BeyondGood6 {
   /**
    * The main entry point.
    * @param args any command-line arguments

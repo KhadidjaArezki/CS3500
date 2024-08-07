@@ -1,12 +1,16 @@
 package edu.cs3500.spreadsheets.view;
 import java.awt.*;
+import java.util.ArrayList;
 import java.util.List;
 
 import edu.cs3500.spreadsheets.model.Cell;
 
 public class WorksheetPanel extends javax.swing.JPanel {
+  // TODO: WE DON'T NEED CELLS JUST CONTENTS
   private List<List<String>> cells;
   private List<String> headers;
+  private List<Rectangle> rectangles;
+  private Graphics2D g2d;
   private int cellWidth;
   private int cellHeight;
   private int rowHeaderWidth;
@@ -39,12 +43,24 @@ public class WorksheetPanel extends javax.swing.JPanel {
   public void setHeaders(List<String> headers) {
     this.headers = headers;
   }
+  
+  public void colorCell(int x, int y) {
+    for (Rectangle rect: rectangles) {
+      if (x>= rect.x && x < (rect.x + rect.width) &&
+          y>= rect.y && y < (rect.y + rect.height)) {
+        g2d.setColor(Color.RED);
+        g2d.drawRect(rect.x, rect.y, cellWidth, cellHeight);
+        System.out.println(String.format("x: %d, y: %d, rect.x: %d, rect.y: %d", x, y, rect.x, rect.y));
+      }
+    }
+  }
     
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
-
-    Graphics2D g2d = (Graphics2D)g;
+    
+    this.rectangles = new ArrayList<Rectangle>(cells.size());
+    this.g2d = (Graphics2D)g;
     int initRowPos = 0;
     int initColPos = 0;
     
@@ -82,6 +98,8 @@ public class WorksheetPanel extends javax.swing.JPanel {
     for(int i=0; i<this.cells.size(); i++) {
       for (int j=0; j<this.cells.get(i).size(); j++) {
         g2d.drawRect(currRowPos, currColPos, cellWidth, cellHeight);
+        rectangles.add(new Rectangle(currRowPos, currColPos, cellWidth, cellHeight));
+        
         currRowPos = currRowPos + cellWidth;
         g2d.drawString(cells.get(i).get(j).substring(0, Math.min(maxTextLength, cells.get(i).get(j).length())),
             (currRowPos - cellWidth + margin),

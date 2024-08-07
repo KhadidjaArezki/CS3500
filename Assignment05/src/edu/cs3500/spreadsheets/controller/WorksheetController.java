@@ -1,5 +1,10 @@
 package edu.cs3500.spreadsheets.controller;
 
+import java.io.IOException;
+
+import edu.cs3500.spreadsheets.model.Worksheet;
+import edu.cs3500.spreadsheets.view.WorksheetEditableView;
+import edu.cs3500.spreadsheets.view.WorksheetGUIEditableView;
 /** TODO:
  * - controllers are best described as an interface whose purpose is to mediate the
  *   interactions between the view and the model. Multiple implementations of controllers
@@ -48,6 +53,28 @@ package edu.cs3500.spreadsheets.controller;
  *   
  */
 
-public interface WorksheetController {
+public class WorksheetController implements Features {
+  private Worksheet model;
+  private WorksheetEditableView view;
   
+  public WorksheetController(Worksheet m) {
+    model = m;
+  }
+
+  public void setView(WorksheetEditableView v) throws IOException {
+    view = v;
+    //provide view with all the callbacks
+    view.addFeatures(this);
+    view.render();
+  }
+
+  @Override
+  public void selectCell(int x, int y) {
+    view.selectCell(x, y);
+  }
+  
+  @Override
+  public void exitProgram() {
+    System.exit(0);
+  }
 }
