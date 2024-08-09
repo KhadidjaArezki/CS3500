@@ -15,7 +15,7 @@ import edu.cs3500.spreadsheets.sexp.WorksheetSexpVisitor;
 import edu.cs3500.spreadsheets.formula.Formula;
 import edu.cs3500.spreadsheets.formula.FormulaCreator;
 
-/** TODO:
+/** DONE:
  * 1. Implement your model. If some method of your model cannot be implemented because it
  *  requires details you think may be revealed in future assignments, you may leave the method
  *  body blank for now — but leave a comment inside the method body explaining why it’s empty and
@@ -51,7 +51,6 @@ import edu.cs3500.spreadsheets.formula.FormulaCreator;
  */
 
 public class WorksheetModel implements Worksheet {
-  
   private List<List<Cell>> worksheet;
   private SexpVisitor<Result<?>> visitor = new WorksheetSexpVisitor();;
   
@@ -132,10 +131,10 @@ public class WorksheetModel implements Worksheet {
   }
 
   @Override
-  public void writeCell(String cellName, String contents) throws IllegalArgumentException {
-    Cell cell = selectCell(cellName);
-    if (contents.startsWith("=")) contents = contents.substring(1);
+  public void writeCell(String cellName, String contents) throws IllegalStateException {
+    Cell cell = select(cellName);
     if (Objects.isNull(contents)) cell.setContents(null);
+    else if (contents.startsWith("=")) contents = contents.substring(1);
     else {
       try {
       Sexp exp = Parser.parse(contents);
@@ -144,6 +143,8 @@ public class WorksheetModel implements Worksheet {
       cell.setContents(exp);
       } catch (IllegalArgumentException e) {
         throw new IllegalArgumentException(String.format("Error in cell %s: Cannot Parse Cell Contents.", cellName));
+      } catch(IllegalStateException e) {
+        throw e;
       }
     }
   }
@@ -154,7 +155,7 @@ public class WorksheetModel implements Worksheet {
     return evalCell(contents);
   }
   
-  private Sexp evalCell(Sexp contents) {
+  public Sexp evalCell(Sexp contents) {
     Result<?> result = contents.accept(this.visitor);
     
     switch(result.getType()) {
@@ -189,8 +190,27 @@ public class WorksheetModel implements Worksheet {
     }
   }
   
+  private Cell copyCell(Cell cell) {
+    Sexp cellContents;
+    try {
+      cellContents = Parser.parse(cell.getContents().toString());
+    } catch(Exception e) {
+      cellContents = null;
+    }
+    return new Cell(cell.getCoord(), cellContents);
+  }
+  
   @Override
   public Cell selectCell(int row, int col) {
+    return copyCell(select(row, col));
+  } 
+  
+  @Override
+  public Cell selectCell(String cellName) {
+    return copyCell(select(cellName));
+  }
+  
+  private Cell select(int row, int col) {
     if (row < 0 || col < 0) throw new IllegalArgumentException("Invalid Cell Coordinates.");
     if (row >= getWorksheetSize() || col >= getRowWidth(row)) {
       this.worksheet = WorksheetBuilderImp.expandWorksheet(this.worksheet, row , col);
@@ -198,8 +218,8 @@ public class WorksheetModel implements Worksheet {
     return this.worksheet.get(row).get(col);
   }
 
-  @Override
-  public Cell selectCell(String cellName) {
+  
+  private Cell select(String cellName) {
     String[] colRow;
     try {
       colRow = cellName.split("(?=\\d+)", 2);
@@ -211,7 +231,7 @@ public class WorksheetModel implements Worksheet {
     int col = Coord.colNameToIndex(colRow[0].trim()) -1;
     int row = Integer.parseInt(colRow[1].trim()) -1;
     
-    return selectCell(row, col);
+    return select(row, col);
   }
   
   private int[] getCellCoords(String cellName) {

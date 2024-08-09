@@ -18,4 +18,18 @@ public interface WorksheetEditableView {
   public void addFeatures(Features features);
 
   public void selectCell(int x, int y);
+
+  public String getEditedCellContents();
+
+  public String getSelectedCellName();
+
+  public void rejectCellEdit();
+
+  public void acceptCellEdit();
+
+  public void refresh();
+
+  public void setInput(String contents);
+
+  void showErrorMessage(String error);
 }

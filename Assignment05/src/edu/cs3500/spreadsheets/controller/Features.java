@@ -6,7 +6,10 @@ import java.io.IOException;
 import edu.cs3500.spreadsheets.view.WorksheetEditableView;
 
 public interface Features {
-  public void selectCell(int x, int y);
-  void exitProgram();
   public void setView(WorksheetEditableView view) throws IOException;
+  public void selectCell(int x, int y);
+  public void acceptCellEdit();
+  void rejectCellEdit();
+  void exitProgram();
+  public void updateCell();
 }

@@ -31,12 +31,6 @@ public class BeyondGood6 {
      *   -in some-filename -gui — opens your graphical view and loads the requested file and
      *    evaluates it
      *   -gui — opens your graphical view with a blank new spreadsheet
-     *   
-     * TODO:
-     * Add an extra option to your command-line option:
-     *   -edit. Specifying this option should open the editor view (as opposed to -gui
-     *   which opened your non-editable graphical view from Assignment 6).
-     *   All previous command-line arguments should continue to work as before.
      */
     Objects.requireNonNull(args);
     if (args.length == 4) {

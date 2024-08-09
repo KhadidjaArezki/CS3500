@@ -3,6 +3,8 @@ package edu.cs3500.spreadsheets.controller;
 import java.io.IOException;
 
 import edu.cs3500.spreadsheets.model.Worksheet;
+import edu.cs3500.spreadsheets.sexp.Parser;
+import edu.cs3500.spreadsheets.sexp.Sexp;
 import edu.cs3500.spreadsheets.view.WorksheetEditableView;
 import edu.cs3500.spreadsheets.view.WorksheetGUIEditableView;
 /** TODO:
@@ -53,11 +55,11 @@ import edu.cs3500.spreadsheets.view.WorksheetGUIEditableView;
  *   
  */
 
-public class WorksheetController implements Features {
+public class GUIWorksheetController implements Features {
   private Worksheet model;
   private WorksheetEditableView view;
   
-  public WorksheetController(Worksheet m) {
+  public GUIWorksheetController(Worksheet m) {
     model = m;
   }
 
@@ -71,10 +73,50 @@ public class WorksheetController implements Features {
   @Override
   public void selectCell(int x, int y) {
     view.selectCell(x, y);
+    try {
+      String contents = model.selectCell(view.getSelectedCellName()).getContents().toString();
+      System.out.println(contents);
+      view.setInput(contents);
+    } catch(NullPointerException e) {
+      view.setInput("");
+    }
   }
   
   @Override
   public void exitProgram() {
     System.exit(0);
+  }
+  
+  @Override
+  public void updateCell() {
+    String newCellContents = view.getEditedCellContents();
+    if (newCellContents .length() == 0) newCellContents = null;
+    String selectedCellName = view.getSelectedCellName();
+    try {
+      Sexp exp = Parser.parse(newCellContents);
+      // Check that no cell contains cyclic refs
+      model.evalCell(exp);
+    } catch(Exception e) {
+      
+    }
+  }
+
+  @Override
+  public void acceptCellEdit() {
+    String newCellContents = view.getEditedCellContents();
+    if (newCellContents .length() == 0) newCellContents = null;
+    String selectedCellName = view.getSelectedCellName();
+    try {
+      model.writeCell(selectedCellName, newCellContents);
+      view.acceptCellEdit();
+    } catch(Exception e) {
+      rejectCellEdit();
+      view.showErrorMessage(e.getMessage());
+    }
+  }
+  
+  @Override
+  public void rejectCellEdit() {
+    view.rejectCellEdit();
   }
 }

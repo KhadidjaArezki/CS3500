@@ -80,6 +80,8 @@ public interface Worksheet {
    */
   public Sexp evalCell(String cellName);
   
+  public Sexp evalCell(Sexp exp);
+  
   /**
    * Get the cell corresonding to the name in the worksheet
    * @param cellName the name of the cell in the worksheet. e.g. A3

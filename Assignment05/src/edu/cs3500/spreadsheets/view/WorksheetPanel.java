@@ -2,15 +2,18 @@ package edu.cs3500.spreadsheets.view;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
-import edu.cs3500.spreadsheets.model.Cell;
+import edu.cs3500.spreadsheets.model.Coord;
 
+@SuppressWarnings("serial")
 public class WorksheetPanel extends javax.swing.JPanel {
-  // TODO: WE DON'T NEED CELLS JUST CONTENTS
   private List<List<String>> cells;
   private List<String> headers;
   private List<Rectangle> rectangles;
-  private Graphics2D g2d;
+  private Rectangle selectedRect;
+  private String selectedCellName;
+  private String selectedCellContents;
   private int cellWidth;
   private int cellHeight;
   private int rowHeaderWidth;
@@ -44,23 +47,32 @@ public class WorksheetPanel extends javax.swing.JPanel {
     this.headers = headers;
   }
   
-  public void colorCell(int x, int y) {
+  public void selectCell(int x, int y) {
     for (Rectangle rect: rectangles) {
       if (x>= rect.x && x < (rect.x + rect.width) &&
           y>= rect.y && y < (rect.y + rect.height)) {
-        g2d.setColor(Color.RED);
-        g2d.drawRect(rect.x, rect.y, cellWidth, cellHeight);
-        System.out.println(String.format("x: %d, y: %d, rect.x: %d, rect.y: %d", x, y, rect.x, rect.y));
+        this.selectedRect = new Rectangle(rect.x, rect.y, cellWidth, cellHeight);
+        this.selectedCellName = Coord.colIndexToName(((int) rect.x/cellWidth) + 1) +
+            Integer.toString((int) rect.y/cellHeight);
+        this.selectedCellContents = cells.get((int) rect.y/cellHeight - 1).get((int) rect.x/cellWidth);
       }
     }
+  }
+  
+  public String getSelectedCellName() {
+    return selectedCellName;
+  }
+  
+  public String getSelectedCellContents() {
+    return selectedCellContents;
   }
     
   @Override
   protected void paintComponent(Graphics g) {
     super.paintComponent(g);
+    Graphics2D g2d = (Graphics2D)g;
     
     this.rectangles = new ArrayList<Rectangle>(cells.size());
-    this.g2d = (Graphics2D)g;
     int initRowPos = 0;
     int initColPos = 0;
     
@@ -94,9 +106,9 @@ public class WorksheetPanel extends javax.swing.JPanel {
     // Draw Cells
     currRowPos = rowHeaderWidth;
     currColPos = currColPos + cellHeight;
-    g2d.setColor(Color.BLACK);
     for(int i=0; i<this.cells.size(); i++) {
       for (int j=0; j<this.cells.get(i).size(); j++) {
+        g2d.setColor(Color.BLACK);
         g2d.drawRect(currRowPos, currColPos, cellWidth, cellHeight);
         rectangles.add(new Rectangle(currRowPos, currColPos, cellWidth, cellHeight));
         
@@ -107,6 +119,10 @@ public class WorksheetPanel extends javax.swing.JPanel {
       }
       currRowPos = rowHeaderWidth;
       currColPos = currColPos + cellHeight;
+    }
+    if (Objects.nonNull(this.selectedRect)) {
+      g2d.setColor(Color.RED);
+      g2d.drawRect(selectedRect.x, selectedRect.y, cellWidth, cellHeight);
     }
   }
 }

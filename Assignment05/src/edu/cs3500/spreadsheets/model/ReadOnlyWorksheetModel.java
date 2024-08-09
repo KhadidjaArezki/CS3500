@@ -56,5 +56,9 @@ public class ReadOnlyWorksheetModel implements Worksheet {
   public int getRowWidth(int row) {
     return delegate.getRowWidth(row);
   }
+  @Override
+  public Sexp evalCell(Sexp exp) {
+    return delegate.evalCell(exp);
+  }
 
 }

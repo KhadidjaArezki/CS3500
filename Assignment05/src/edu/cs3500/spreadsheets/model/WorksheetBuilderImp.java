@@ -50,6 +50,8 @@ public class WorksheetBuilderImp implements WorksheetBuilder<Worksheet> {
    * @param col the mi,imum size of rows in the new worksheet.
    * @return a new bigger worksheet with the contents of the old worksheet.
    */
+
+  // TODO: DON'T CREATE EMPTY CELLS. INSTEAD ADD CELLS WHEN NECESSARY
   public static List<List<Cell>> expandWorksheet(List<List<Cell>> worksheet, int row, int col) {
     if (Objects.isNull(worksheet) || worksheet.size() == 0) return getNewWorksheet();
 
