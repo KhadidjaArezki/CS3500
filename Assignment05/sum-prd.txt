@@ -1,0 +1,8 @@
+# Creates the four coordinates
+A1 1
+B1 2
+C1 3
+D1 4
+
+# Should contain the value 50
+A2 =(PRODUCT (SUM A1:D1) 5)
