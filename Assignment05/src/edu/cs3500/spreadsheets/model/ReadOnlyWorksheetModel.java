@@ -60,5 +60,13 @@ public class ReadOnlyWorksheetModel implements Worksheet {
   public Sexp evalCell(Sexp exp) {
     return delegate.evalCell(exp);
   }
+  @Override
+  public List<String> getRefs(String cellName) {
+    return delegate.getRefs(cellName);
+  }
+  @Override
+  public Sexp getNewRefVal(String targetCellName, Sexp newValue, Sexp refCellContents) {
+    return delegate.getNewRefVal(targetCellName, newValue, refCellContents);
+  }
 
 }

@@ -95,19 +95,7 @@ public class WorksheetModel implements Worksheet {
       checkRep(cellName, selectCell(contents.toString()).getContents());
       break;
     case REFRANGE:
-      String[] startEnd = contents.toString().split(":", 2);
-      int[] cellCoords = getCellCoords(cellName);
-      int cellRow = cellCoords[0];
-      int cellCol = cellCoords[1];
-
-      int[] rangeCoords = getRangeCoords(startEnd[0], startEnd[1]);
-      int startRow = rangeCoords[0];
-      int startCol = rangeCoords[1];
-      int endRow = rangeCoords[2];
-      int endCol = rangeCoords[3];
-      
-      if (cellRow >= startRow && cellRow <= endRow &&
-          cellCol >= startCol && cellCol <= endCol) {
+      if (isCellInRange(cellName, contents.toString())){
         throw new IllegalStateException(errMsg);
       }
       List<Cell> cells = selectRange(contents.toString());
@@ -124,6 +112,116 @@ public class WorksheetModel implements Worksheet {
     // For primitive values, no check is required
     default:
       break;
+    }
+  }
+  
+  private boolean isCellInRange(String cellName, String range) {
+    String[] startEnd = range.split(":", 2);
+    int[] cellCoords = getCellCoords(cellName);
+    int cellRow = cellCoords[0];
+    int cellCol = cellCoords[1];
+
+    int[] rangeCoords = getRangeCoords(startEnd[0], startEnd[1]);
+    int startRow = rangeCoords[0];
+    int startCol = rangeCoords[1];
+    int endRow = rangeCoords[2];
+    int endCol = rangeCoords[3];
+    
+    return cellRow >= startRow && cellRow <= endRow &&
+        cellCol >= startCol && cellCol <= endCol;
+  }
+  
+  private boolean isCellRef(String cellName, Sexp contents) {
+    Result<?> result = contents.accept(this.visitor);
+    
+    switch(result.getType()) {
+    case REF:
+      if (contents.toString().equals(cellName)) return true;
+      else return isCellRef(cellName, selectCell(contents.toString()).getContents());
+    case REFRANGE:
+      if (isCellInRange(cellName, contents.toString())) return true;
+      else {
+        List<Cell> rangeCells = selectRange(contents.toString());
+        List<Sexp> expressions = new ArrayList<Sexp>();
+        for(Cell cell : rangeCells) {
+          if (cell.getCellName().equals(cellName)) return true; 
+          if (isCellRef(cellName, cell.getContents())) return true;
+        }
+        return false;
+      }
+    case CALL:
+      @SuppressWarnings("unchecked") List<Sexp> list = ((Result<List<Sexp>>) result).getResult();
+      for (Sexp exp: list.subList(1, list.size())) {
+        if (isCellRef(cellName, exp)) return true;
+      }
+      return false;
+    default:
+      return false;
+    }
+  }
+
+  /* TODO: CREATE MAP<CELLNAME, LIST<CELLNAME>> TO STORE CELLS THAT REFRENCE CELLNAME 
+   * Get list of cell names referencing cellName
+   */
+  public List<String> getRefs(String cellName) {
+    List<String> refs = new ArrayList<String>();
+    for (List<Cell> row : this.worksheet) {
+      for (Cell cell : row) {
+        if (Objects.nonNull(cell.getContents()) &&
+          (isCellRef(cellName, cell.getContents()))) {
+          refs.add(cell.getCellName());
+        }
+      }
+    }
+    return refs;
+  }
+  
+  public Sexp getNewRefVal(String targetCellName, Sexp newValue, Sexp refCellContents) {
+    if (Objects.isNull(refCellContents)) return null;
+    
+    Result<?> result = refCellContents.accept(this.visitor);
+    switch(result.getType()) {
+    case REF:
+      if (refCellContents.toString().equals(targetCellName)) return newValue;
+      else return getNewRefVal(targetCellName, newValue, 
+          selectCell(refCellContents.toString()).getContents());
+    case CALL:
+      @SuppressWarnings("unchecked") List<Sexp> exps = ((Result<List<Sexp>>) result).getResult();
+      Formula fun = FormulaCreator.create(exps.get(0).toString());
+      List<Sexp> args = new ArrayList<Sexp>();
+      for (Sexp arg: exps.subList(1, exps.size())) {
+        // check if exp is ref, range, or another call, else keep value
+        switch(arg.accept(this.visitor).getType()) {
+        case REF:
+          args.add(evalCell(getNewRefVal(targetCellName, newValue, arg)));
+          break;
+        case REFRANGE:
+          if (isCellInRange(targetCellName, arg.toString())) {
+            List<Cell> rangeCells = selectRange(arg.toString());
+            List<Sexp> expressions = new ArrayList<Sexp>();
+            for(Cell cell : rangeCells) {
+              if (cell.getCellName().equals(targetCellName)) {
+                cell.setContents(newValue);
+              }
+              expressions.add(getNewRefVal(targetCellName, newValue,cell.getContents()));
+            }
+            args.add(new SList(expressions));
+          } else {
+            args.add(getNewRefVal(targetCellName, newValue, arg));
+          }
+          
+          break;
+        case CALL:
+          args.add(getNewRefVal(targetCellName, newValue, arg));
+          break;
+        default:
+          args.add(evalCell(arg));
+          break;
+        }
+      }
+      return fun.apply(args, visitor);
+    default:
+      return evalCell(refCellContents);
     }
   }
   

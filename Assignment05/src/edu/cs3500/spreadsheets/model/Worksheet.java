@@ -125,4 +125,20 @@ public interface Worksheet {
    * @throws IOException 
    */
   public Appendable save(Appendable ap) throws IOException;
+
+  /**
+   * Get list of cell names that refrence cellName
+   * @param cellName the name of the cell for which to find all references
+   * @return list of names of cells that refrence cellName
+   */
+  public List<String> getRefs(String cellName);
+
+  /**
+   * 
+   * @param targetCellName the name of the reevaluated cell
+   * @param newValue the new computed value of targetCellName
+   * @param refCellContents the contents of the cell that contains refrence to targetCellName
+   * @return
+   */
+  public Sexp getNewRefVal(String selectedCellName, Sexp exp, Sexp sexp);
 }
