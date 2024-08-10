@@ -140,4 +140,8 @@ public class WorksheetPanel extends javax.swing.JPanel {
       g2d.drawRect(selectedRect.x, selectedRect.y, cellWidth, cellHeight);
     }
   }
+
+  public void setCells(int row, int col, String value) {
+    cells.get(row).set(col, value);
+  }
 }

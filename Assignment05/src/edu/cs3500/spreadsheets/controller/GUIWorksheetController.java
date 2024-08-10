@@ -78,6 +78,7 @@ public class GUIWorksheetController implements Features {
 
   @Override
   public void selectCell(int x, int y) {
+    configureWorksheetCells();
     view.selectCell(x, y);
     try {
       Sexp contents = model.selectCell(view.getSelectedCellName()).getContents();
@@ -98,33 +99,36 @@ public class GUIWorksheetController implements Features {
   public void updateCell() {
     String newCellContents = view.getEditedCellContents();
     if (newCellContents .length() == 0) newCellContents = null;
+    
     else if (newCellContents.startsWith("=")) newCellContents = newCellContents.substring(1);
-    System.out.println(String.format("Updating %s", newCellContents));
+//    System.out.println(String.format("Updating %s", newCellContents));
     
     String selectedCellName = view.getSelectedCellName();
-    Coord panelSize = getworksheetSizeCoords();
-    List<List<String>> updatedCells = new ArrayList<List<String>>(panelSize.row);
     try {
-      Sexp exp = Parser.parse(newCellContents);
-      for (int i=0; i<panelSize.row; i++) {
-        List<String> row = new ArrayList<String>(panelSize.col);
-        for (int j=0; j<panelSize.col; j++) {
-          Cell cell = model.selectCell(i, j);
-          if (Objects.nonNull(cell.getContents())) {
-            if (cell.getCellName().equals(selectedCellName)) {
-              row.add(model.evalCell(exp).toString());
-            } else row.add(model.evalCell(cell.getContents()).toString());
-          }
-          else {
-            row.add("");
-          }
-        }
-        updatedCells.add(row);
+      Sexp exp;
+      if (Objects.isNull(newCellContents)) {
+        exp = null;
+        view.setCell(model.selectCell(selectedCellName).getCoord(), "");
       }
-      view.setWorksheetCells(updatedCells);
+      else {
+        exp = Parser.parse(newCellContents);
+        view.setCell(model.selectCell(selectedCellName).getCoord(), model.evalCell(exp).toString());
+      }
+      List<String> refs = model.getRefs(selectedCellName);
+      for (String cn : refs) {
+        Cell c = model.selectCell(cn);
+        String newVal;
+        try {
+          newVal = model.evalCell(model.getNewRefVal(selectedCellName, exp, c.getContents())).toString();
+        } catch(NullPointerException e) {
+          newVal = "";
+        }
+        view.setCell(c.getCoord(), newVal);
+      }
+    
       view.refresh();
     } catch(Exception e) {
-//      e.printStackTrace();
+      e.printStackTrace();
     }
   }
 
@@ -135,11 +139,11 @@ public class GUIWorksheetController implements Features {
     String selectedCellName = view.getSelectedCellName();
     try {
       model.writeCell(selectedCellName, newCellContents);
-      configureWorksheetCells();
       view.acceptCellEdit();
+      configureWorksheetCells();
     } catch(Exception e) {
-//      e.printStackTrace();
       rejectCellEdit();
+      configureWorksheetCells();
       view.showErrorMessage(e.getMessage());
     }
   }

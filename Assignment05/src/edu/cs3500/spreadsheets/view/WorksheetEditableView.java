@@ -49,4 +49,6 @@ public interface WorksheetEditableView {
 
   public void setWorksheetHeaders(List<String> headers);
 
+  public void setCell(Coord coord, String value);
+
 }

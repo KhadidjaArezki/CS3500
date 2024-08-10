@@ -193,6 +193,11 @@ public class WorksheetGUIEditableView extends JFrame implements WorksheetEditabl
     worksheetPanel.setCells(cells);
   }
   
+  public void setCell(Coord coord, String value) {
+    worksheetPanel.setCells(coord.row-1, coord.col-1, value);
+    
+  }
+  
   public void setWorksheetHeaders(List<String> headers) {
     worksheetPanel.setHeaders(headers);
   }
