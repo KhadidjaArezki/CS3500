@@ -68,5 +68,9 @@ public class ReadOnlyWorksheetModel implements Worksheet {
   public Sexp getNewRefVal(String targetCellName, Sexp newValue, Sexp refCellContents) {
     return delegate.getNewRefVal(targetCellName, newValue, refCellContents);
   }
+  @Override
+  public boolean isValidNewVal(String cellName, Sexp newVal) {
+    return delegate.isValidNewVal(cellName, newVal);
+  }
 
 }

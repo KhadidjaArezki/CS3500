@@ -141,4 +141,6 @@ public interface Worksheet {
    * @return
    */
   public Sexp getNewRefVal(String selectedCellName, Sexp exp, Sexp sexp);
+
+  public boolean isValidNewVal(String cellName, Sexp newVal);
 }

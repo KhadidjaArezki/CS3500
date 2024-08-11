@@ -132,6 +132,8 @@ public class WorksheetModel implements Worksheet {
   }
   
   private boolean isCellRef(String cellName, Sexp contents) {
+    if (Objects.isNull(contents)) return false;
+    
     Result<?> result = contents.accept(this.visitor);
     
     switch(result.getType()) {
@@ -142,7 +144,6 @@ public class WorksheetModel implements Worksheet {
       if (isCellInRange(cellName, contents.toString())) return true;
       else {
         List<Cell> rangeCells = selectRange(contents.toString());
-        List<Sexp> expressions = new ArrayList<Sexp>();
         for(Cell cell : rangeCells) {
           if (cell.getCellName().equals(cellName)) return true; 
           if (isCellRef(cellName, cell.getContents())) return true;
@@ -159,7 +160,17 @@ public class WorksheetModel implements Worksheet {
       return false;
     }
   }
-
+  
+  @Override
+  public boolean isValidNewVal(String cellName, Sexp newValue) {
+    try {
+      checkRep(cellName, newValue);
+      return true;
+    } catch(IllegalStateException e) {
+      return false;
+    }
+  }
+  
   /* TODO: CREATE MAP<CELLNAME, LIST<CELLNAME>> TO STORE CELLS THAT REFRENCE CELLNAME 
    * Get list of cell names referencing cellName
    */
@@ -182,7 +193,7 @@ public class WorksheetModel implements Worksheet {
     Result<?> result = refCellContents.accept(this.visitor);
     switch(result.getType()) {
     case REF:
-      if (refCellContents.toString().equals(targetCellName)) return newValue;
+      if (refCellContents.toString().equals(targetCellName)) return evalCell(newValue);
       else return getNewRefVal(targetCellName, newValue, 
           selectCell(refCellContents.toString()).getContents());
     case CALL:
@@ -203,13 +214,17 @@ public class WorksheetModel implements Worksheet {
               if (cell.getCellName().equals(targetCellName)) {
                 cell.setContents(newValue);
               }
-              expressions.add(getNewRefVal(targetCellName, newValue,cell.getContents()));
+              expressions.add(getNewRefVal(targetCellName, newValue, cell.getContents()));
             }
             args.add(new SList(expressions));
           } else {
-            args.add(getNewRefVal(targetCellName, newValue, arg));
-          }
-          
+            List<Cell> rangeCells = selectRange(arg.toString());
+            List<Sexp> expressions = new ArrayList<Sexp>();
+            for(Cell cell : rangeCells) {
+              expressions.add(getNewRefVal(targetCellName, newValue, cell.getContents()));
+            }
+            args.add(new SList(expressions));
+          } 
           break;
         case CALL:
           args.add(getNewRefVal(targetCellName, newValue, arg));
@@ -390,6 +405,6 @@ public class WorksheetModel implements Worksheet {
         }
       }
     }
-    return null;
+    return ap;
   }
 }
