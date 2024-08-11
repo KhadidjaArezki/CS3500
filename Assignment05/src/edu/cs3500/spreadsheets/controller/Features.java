@@ -13,4 +13,6 @@ public interface Features {
   void rejectCellEdit();
   void exitProgram();
   public void updateCell();
+  public void saveChanges() throws IOException;
+  public void close();
 }

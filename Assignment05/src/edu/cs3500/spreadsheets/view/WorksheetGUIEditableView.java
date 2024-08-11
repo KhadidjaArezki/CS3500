@@ -8,6 +8,8 @@ import java.awt.Point;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +28,7 @@ import edu.cs3500.spreadsheets.model.Cell;
 import edu.cs3500.spreadsheets.model.Coord;
 import edu.cs3500.spreadsheets.model.ReadOnlyWorksheetModel;
 
-/** TODO:
+/** DONE:
  * Design a new view that contains the existing visual view as a component within it,
  * and adds the following abilities:
  * 
@@ -41,12 +43,8 @@ import edu.cs3500.spreadsheets.model.ReadOnlyWorksheetModel;
  *    I used the two toolbar buttons on the left, but you may choose another UI if you wish.
  *    If the edits are confirmed, the cell must be edited; if the edits are rejected, then the
  *    displayed formula must revert to the current contents of the cell.
- *  
- * 4- Enhance your editor view with the ability for the user to scroll indefinitely to the right of
- *    the current rightmost cell, or down beneath the bottom-most cell, and be able to edit any cell
- *    they choose. Ideally, this could be done simply by scrolling.
  *    
- * 5- As items are edited, the computed values of any affected cells must be recomputed and
+ * 4- As items are edited, the computed values of any affected cells must be recomputed and
  *    redisplayed immediately. (One expensive way to do this is simply to recompute all cells on
  *    every edit; a more efficiently designed solution is up to you.) Note that this may cause
  *    cycles in your model: your program must not crash if this happens, even if you do not
@@ -57,7 +55,12 @@ import edu.cs3500.spreadsheets.model.ReadOnlyWorksheetModel;
  *    build a new, composite view, and leave your existing visual view alone.
  *       
  *  - For this assignment you need to reuse the JPanel as a component in your new editor view;
- *    you do not have to reuse the JFrame class you created, and can develop a new one if needed. 
+ *    you do not have to reuse the JFrame class you created, and can develop a new one if needed.
+ *    
+ ** TODO:
+ *    5- Enhance your editor view with the ability for the user to scroll indefinitely to the right of
+ *    the current rightmost cell, or down beneath the bottom-most cell, and be able to edit any cell
+ *    they choose. Ideally, this could be done simply by scrolling.
  */
 
 public class WorksheetGUIEditableView extends JFrame implements WorksheetEditableView {
@@ -74,7 +77,8 @@ public class WorksheetGUIEditableView extends JFrame implements WorksheetEditabl
     
     this.setTitle("Worksheet");
     //TODO: ASK USER TO SAVE
-    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+    this.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+//    this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     
     JPanel container = new JPanel();
     container.setLayout(new BoxLayout(container, BoxLayout.Y_AXIS));
@@ -116,6 +120,7 @@ public class WorksheetGUIEditableView extends JFrame implements WorksheetEditabl
   }
   
   public void acceptCellEdit() {
+    setEditingPanelTextField("");
     refresh();
   }
   
@@ -151,6 +156,32 @@ public class WorksheetGUIEditableView extends JFrame implements WorksheetEditabl
   
   @Override
   public void addFeatures(Features features) {
+    JFrame frame = this;
+    this.addWindowListener(new WindowAdapter() {
+      //I skipped unused callbacks for readability
+      
+      @Override
+      public void windowClosing(WindowEvent e) {
+        int choice = JOptionPane.showConfirmDialog(frame, "Do you want to save?");
+          if( choice == JOptionPane.OK_OPTION){
+            try {
+              features.saveChanges();
+              features.close();
+              frame.setVisible(false);
+              frame.dispose();
+            }
+            catch (IOException e1) {
+              showErrorMessage("Cannot save changes.");
+            }
+          }
+          else if( choice == JOptionPane.NO_OPTION){
+            features.close();
+            frame.setVisible(false);
+            frame.dispose();
+          }
+      }
+    });
+
     this.worksheetPanel.addFeatures(features);
     this.cellEditingPanel.addFeatures(features);
   }

@@ -1,7 +1,9 @@
 package edu.cs3500.spreadsheets;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +38,8 @@ public class BeyonGood7 {
         Objects.nonNull(args[3]) && args[3].equals("-edit")) {
       
       try {
-        Path path = new File(args[1]).toPath();
+        File file = new File(args[1]);
+        Path path = file.toPath();
         Readable rd = new StringReader(Files.readString(path));
         Worksheet model = WorksheetReader.read(new WorksheetBuilderImp(), rd);
         int minNumRows = 26;
@@ -47,7 +50,9 @@ public class BeyonGood7 {
             minNumRows,
             controller.getWorksheetCells(),
             controller.getWorksheetHeaders());
+        
         controller.setView(view);
+        controller.setWriter(file);
         
       } catch(IllegalStateException e) {
       e.printStackTrace();

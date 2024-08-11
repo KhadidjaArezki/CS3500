@@ -1,6 +1,10 @@
 package edu.cs3500.spreadsheets.controller;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +16,7 @@ import edu.cs3500.spreadsheets.sexp.Parser;
 import edu.cs3500.spreadsheets.sexp.Sexp;
 import edu.cs3500.spreadsheets.view.WorksheetEditableView;
 import edu.cs3500.spreadsheets.view.WorksheetGUIEditableView;
-/** TODO:
+/** DONE:
  * - controllers are best described as an interface whose purpose is to mediate the
  *   interactions between the view and the model. Multiple implementations of controllers
  *   are possible — potentially a specialized one for every model/view pairing.
@@ -42,7 +46,8 @@ import edu.cs3500.spreadsheets.view.WorksheetGUIEditableView;
  *   
  *   3. If you need to define only 1 or 2 of these listener methods, starting from a
  *      MouseAdapter may be simpler.
- *      
+ * 
+ ** TODO:
  * Testing:
  * - Testing the controller should also be straightforward — all of its behavior is
  *   either in its methods, or in the wiring-up of those methods to key, mouse or other
@@ -64,6 +69,8 @@ public class GUIWorksheetController implements Features {
   private Worksheet model;
   private WorksheetEditableView view;
   private int minNumRows;
+  private PrintWriter ap;
+  private File outputFile;
   
   public GUIWorksheetController(Worksheet m) {
     model = m;
@@ -74,6 +81,19 @@ public class GUIWorksheetController implements Features {
     //provide view with all the callbacks
     view.addFeatures(this);
     view.render();
+  }
+  
+  public void setWriter(File file) {
+    this.outputFile = file;
+    try {
+      this.ap = new PrintWriter(new FileWriter(file, true));
+    } catch(IOException e) {
+      
+    }
+  }
+  
+  public void close() {
+    this.ap.close();
   }
 
   @Override
@@ -86,6 +106,7 @@ public class GUIWorksheetController implements Features {
       else view.setInput(contents.toString());
       view.refresh();
     } catch(NullPointerException e) {
+//      e.printStackTrace();
       view.setInput("");
     }
   }
@@ -101,34 +122,41 @@ public class GUIWorksheetController implements Features {
     if (newCellContents .length() == 0) newCellContents = null;
     
     else if (newCellContents.startsWith("=")) newCellContents = newCellContents.substring(1);
-//    System.out.println(String.format("Updating %s", newCellContents));
-    
     String selectedCellName = view.getSelectedCellName();
+
+//    System.out.println(String.format("Updating %s: %s", selectedCellName, newCellContents));
     try {
       Sexp exp;
+      String expVal;
+      Coord coords = model.selectCell(selectedCellName).getCoord();
       if (Objects.isNull(newCellContents)) {
         exp = null;
-        view.setCell(model.selectCell(selectedCellName).getCoord(), "");
-      }
-      else {
+        expVal = "";
+      } else {
         exp = Parser.parse(newCellContents);
-        view.setCell(model.selectCell(selectedCellName).getCoord(), model.evalCell(exp).toString());
+        expVal = model.evalCell(exp).toString();
       }
-      List<String> refs = model.getRefs(selectedCellName);
-      for (String cn : refs) {
-        Cell c = model.selectCell(cn);
-        String newVal;
-        try {
-          newVal = model.evalCell(model.getNewRefVal(selectedCellName, exp, c.getContents())).toString();
-        } catch(NullPointerException e) {
-          newVal = "";
+      if (model.isValidNewVal(selectedCellName, exp)) {
+        view.setCell(coords, expVal);
+  
+        List<String> refs = model.getRefs(selectedCellName);
+        for (String cn : refs) {
+          Cell c = model.selectCell(cn); 
+          String newVal;
+          try {
+            newVal = model.evalCell(model.getNewRefVal(selectedCellName, exp, c.getContents())).toString();
+//            System.out.println(String.format("%s: %s", c.getCellName(), newVal));
+          } catch(NullPointerException e) {
+            newVal = "";
+          }
+          view.setCell(c.getCoord(), newVal);
         }
-        view.setCell(c.getCoord(), newVal);
+        view.refresh();
       }
-    
-      view.refresh();
+      else throw new IllegalStateException();
     } catch(Exception e) {
-      e.printStackTrace();
+//      e.printStackTrace();
+      configureWorksheetCells();
     }
   }
 
@@ -138,6 +166,7 @@ public class GUIWorksheetController implements Features {
     if (newCellContents .length() == 0) newCellContents = null;
     String selectedCellName = view.getSelectedCellName();
     try {
+//      System.out.println(String.format("%s %s", selectedCellName, newCellContents));
       model.writeCell(selectedCellName, newCellContents);
       view.acceptCellEdit();
       configureWorksheetCells();
@@ -153,6 +182,17 @@ public class GUIWorksheetController implements Features {
     String contents = model.selectCell(view.getSelectedCellName()).getContents().toString();
     configureWorksheetCells();
     view.rejectCellEdit(contents);
+  }
+  
+  @Override
+  public void saveChanges() throws IOException {
+    try {
+      this.ap = new PrintWriter(new FileWriter(this.outputFile, false));
+//      this.ap.flush();
+      this.ap = (PrintWriter) (model.save((Appendable) this.ap));
+    } catch(Exception e) {
+        throw new IOException();
+    }
   }
   
   public void configureView() {
@@ -223,7 +263,12 @@ public class GUIWorksheetController implements Features {
       for (int j=0; j<panelSize.col; j++) {
         Cell cell = model.selectCell(i, j);
         if (Objects.nonNull(cell.getContents())) {
-          row.add(model.evalCell(cell.getCellName()).toString());
+          try {
+            Sexp val = model.evalCell(cell.getCellName());
+            row.add(val.toString());
+          } catch(NullPointerException e) {
+            row.add("");
+          }
         }
         else {
           row.add("");
