@@ -174,6 +174,7 @@ public class WorksheetModel implements Worksheet {
   /* TODO: CREATE MAP<CELLNAME, LIST<CELLNAME>> TO STORE CELLS THAT REFRENCE CELLNAME 
    * Get list of cell names referencing cellName
    */
+  @Override
   public List<String> getRefs(String cellName) {
     List<String> refs = new ArrayList<String>();
     for (List<Cell> row : this.worksheet) {
@@ -186,7 +187,8 @@ public class WorksheetModel implements Worksheet {
     }
     return refs;
   }
-  
+
+  @Override
   public Sexp getNewRefVal(String targetCellName, Sexp newValue, Sexp refCellContents) {
     if (Objects.isNull(refCellContents)) return null;
     
@@ -234,6 +236,7 @@ public class WorksheetModel implements Worksheet {
           break;
         }
       }
+//      System.out.println(fun.apply(args, visitor));
       return fun.apply(args, visitor);
     default:
       return evalCell(refCellContents);
